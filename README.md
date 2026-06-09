@@ -1,104 +1,87 @@
-# AgentCore Project
+# IPL Multi-Agent Command Center
 
-This project was created with the [AgentCore CLI](https://github.com/aws/agentcore-cli).
+An [Amazon Bedrock AgentCore](https://aws.amazon.com/bedrock/agentcore/) project that turns cricket fandom into a **multi-agent AI experience** for the Indian Premier League (IPL).
 
-## Project Structure
+## Architecture
 
+```mermaid
+flowchart TB
+    Fan[Fan / API caller] --> Host[IPLAnalyst — IPL Command Center]
+    Host --> Swarm[Strands Swarm]
+    Swarm --> H[ipl_host]
+    Swarm --> S[stats_guru]
+    Swarm --> M[match_wizard]
+    Swarm --> F[fantasy_coach]
+    Swarm --> HB[history_buff]
+    S --> Data[(ipl_data catalogue)]
+    M --> Data
+    F --> Data
+    HB --> Data
+
+    Fan -.-> Stats[IPLStatsAgent]
+    Fan -.-> Fantasy[IPLFantasyAgent]
+    Stats --> Data
+    Fantasy --> Data
 ```
-my-project/
-├── AGENTS.md               # AI coding assistant context
-├── agentcore/
-│   ├── agentcore.json      # Project config (agents, memories, credentials, gateways, evaluators)
-│   ├── aws-targets.json    # Deployment targets (account + region)
-│   ├── .env.local          # Secrets — API keys (gitignored)
-│   ├── .llm-context/       # TypeScript type definitions for AI assistants
-│   │   ├── agentcore.ts    # AgentCoreProjectSpec types
-│   │   ├── aws-targets.ts  # Deployment target types
-│   │   └── mcp.ts          # Gateway and MCP tool types
-│   └── cdk/                # CDK infrastructure (@aws/agentcore-cdk)
-├── app/                    # Agent application code
-└── evaluators/             # Custom evaluator code (if any)
-```
 
-## Getting Started
+**IPLAnalyst** is the main entry point: a five-agent swarm that collaborates on stats, match analysis, fantasy tips, and IPL history. **IPLStatsAgent** and **IPLFantasyAgent** are deployable specialist runtimes you can call directly.
 
-### Prerequisites
+## Agents
 
-- **Node.js** 20.x or later
-- **Python 3.10+** and **uv** for Python agents ([install uv](https://docs.astral.sh/uv/getting-started/installation/))
-- **AWS credentials** configured (`aws configure` or environment variables)
-- **Docker** (only for Container build agents)
+| Runtime | Pattern | What it does |
+| --- | --- | --- |
+| `IPLAnalyst` | Strands Swarm (5 agents) | Full IPL assistant — routes to specialists automatically |
+| `IPLStatsAgent` | Single specialist | Deep-dive stats, standings, player comparisons |
+| `IPLFantasyAgent` | Single specialist | Dream11 XI, captain picks, fantasy ratings |
 
-### Development
-
-Run your agent locally:
+## Quick start
 
 ```bash
+# Run the main swarm locally
 agentcore dev
-```
 
-### Deployment
+# Example prompts (new terminal)
+agentcore invoke --dev "Orange Cap race in IPL 2024 — who won and by how much?"
+agentcore invoke --dev "KKR vs SRH head to head and 2024 final recap"
+agentcore invoke --dev "I'm an RCB fan — cheer me up with some Kohli stats"
+```
 
 Deploy to AWS:
 
 ```bash
+agentcore validate
 agentcore deploy
+agentcore invoke "Build a premium fantasy XI for MI vs CSK"
 ```
 
-## Commands
+## Memories
 
-| Command | Description |
-| --- | --- |
-| `agentcore create` | Create a new AgentCore project |
-| `agentcore add` | Add resources (agent, memory, credential, gateway, evaluator, policy) |
-| `agentcore remove` | Remove resources |
-| `agentcore dev` | Run agent locally with hot-reload |
-| `agentcore deploy` | Deploy to AWS via CDK |
-| `agentcore status` | Show deployment status |
-| `agentcore invoke` | Invoke agent (local or deployed) |
-| `agentcore logs` | View agent logs |
-| `agentcore traces` | View agent traces |
-| `agentcore eval` | Run evaluations |
-| `agentcore package` | Package agent artifacts |
-| `agentcore validate` | Validate configuration |
-| `agentcore pause` | Pause a deployed agent |
-| `agentcore resume` | Resume a paused agent |
-| `agentcore fetch` | Fetch remote resource definitions |
-| `agentcore import` | Import existing resources |
-| `agentcore update` | Check for CLI updates |
+Each agent has AgentCore Memory configured in `agentcore/agentcore.json`:
 
-## Configuration
+- **IPLAnalyst** — fan preferences (favorite team) + semantic recall of past analysis
+- **IPLStatsAgent** — semantic recall of stats lookups
+- **IPLFantasyAgent** — fantasy league preferences (risk style, platform)
 
-Edit the JSON files in `agentcore/` to configure your project. See `agentcore/.llm-context/` for type definitions and validation constraints.
+## Project layout
 
-The project uses a **flat resource model** — agents, memories, credentials, gateways, evaluators, and policies are top-level arrays in `agentcore.json`. Resources are independent; agents discover memories and credentials at runtime via environment variables or SDK calls.
+```
+app/
+├── IPLAnalyst/          # Swarm orchestrator + full tool suite
+│   ├── agents/          # Swarm team definition
+│   ├── ipl_data/        # Curated IPL 2024 data
+│   └── tools/           # Stats, match, fantasy, history tools
+├── IPLStatsAgent/       # Standalone stats agent
+└── IPLFantasyAgent/     # Standalone fantasy agent
+agentcore/
+└── agentcore.json       # Three runtimes + three memories
+```
 
-## Resources
+## Sample questions
 
-| Resource | Purpose |
-| --- | --- |
-| Agent (runtime) | HTTP, MCP, or A2A agent deployed to AgentCore Runtime |
-| Memory | Persistent context storage with configurable strategies |
-| Credential | API key or OAuth credential providers |
-| Gateway | MCP gateway that routes tool calls to targets |
-| Gateway Target | Tool implementation (Lambda, MCP server, OpenAPI, Smithy, API Gateway) |
-| Evaluator | Custom LLM-as-a-Judge or code-based evaluation |
-| Online Eval Config | Continuous evaluation pipeline for deployed agents |
-| Policy | Cedar authorization policies for gateway tools |
+- *"Compare Bumrah and Harshal Patel as bowlers in 2024"*
+- *"What happened in the 2024 IPL final?"*
+- *"Rate Sunil Narine as a fantasy pick"*
+- *"Which team has won the most IPL titles?"*
+- *"Predict MI vs CSK at Wankhede"*
 
-### Agent Types
-
-- **Template agents**: Created from framework templates (Strands, LangChain/LangGraph, GoogleADK, OpenAI Agents, Autogen)
-- **BYO agents**: Bring your own code with `agentcore add agent --type byo`
-- **Import agents**: Import existing Bedrock agents with `agentcore import`
-
-### Build Types
-
-- **CodeZip**: Python source packaged as a zip and deployed directly to AgentCore Runtime
-- **Container**: Docker image built via CodeBuild (ARM64), pushed to ECR, and deployed to AgentCore Runtime
-
-## Documentation
-
-- [AgentCore CLI](https://github.com/aws/agentcore-cli)
-- [AgentCore CDK Constructs](https://github.com/aws/agentcore-l3-cdk-constructs)
-- [Amazon Bedrock AgentCore](https://aws.amazon.com/bedrock/agentcore/)
+Built with **Strands Agents** on **AgentCore Runtime** — no external cricket API required; knowledge is embedded in `ipl_data/catalogue.py`.

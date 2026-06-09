@@ -7,24 +7,8 @@
     "agentcore:created-by": "agentcore-cli",
     "agentcore:project-name": "agentcoreTestProject"
   },
-  "runtimes": [
-    {
-      "name": "IPLAnalyst",
-      "build": "CodeZip",
-      "entrypoint": "main.py",
-      "codeLocation": "app/IPLAnalyst/",
-      "runtimeVersion": "PYTHON_3_14",
-      "networkMode": "PUBLIC",
-      "protocol": "HTTP"
-    }
-  ],
-  "memories": [
-    {
-      "name": "IPLAnalystMemory",
-      "eventExpiryDuration": 30,
-      "strategies": []
-    }
-  ],
+  "runtimes": [],
+  "memories": [],
   "credentials": [],
   "evaluators": [],
   "onlineEvalConfigs": [],
